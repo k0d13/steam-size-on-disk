@@ -10,7 +10,8 @@
     "@steambrew/client": "^5.8.4",
     "enhanced-ms": "^4.2.0",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "steambrew-utils": "0.0.0-beta-20260514084206"
   },
   "devDependencies": {
     "@steambrew/ttc": "^2.8.7",
