@@ -35,10 +35,15 @@ fi
 
 # Check the remote, not just local — Actions checkouts are shallow and don't
 # include tags by default, so a re-run after a previous push wouldn't see it.
-git tag -f "$tag"
-if ! git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
-  git push origin "$tag"
+# If the tag is already on the remote, a prior run already did everything
+# below; bail out without printing the magic line so changesets/action
+# doesn't try to re-push the tag and fail.
+if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+  echo "Tag ${tag} already on remote — nothing to publish."
+  exit 0
 fi
+git tag -f "$tag"
+git push origin "$tag"
 
 # --- GitHub release ---------------------------------------------------------
 
