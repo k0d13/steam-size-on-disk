@@ -1,7 +1,9 @@
-import { onLocationChange } from "./monitors/location.js";
-import { onPopupCreate, PopupType } from "./monitors/popup.js";
-import { patch as patchLibraryApp } from "./renderers/library-app.js";
-import Steam from "./steam.js";
+import { Steam } from "steambrew-utils";
+import { Logger } from "steambrew-utils/logger";
+import { onPopupCreate, PopupType, onLocationChange } from "steambrew-utils/watchers";
+import { patch as patchLibraryApp } from "./renderers/library-app";
+
+export const logger = new Logger("Steam Size On Disk");
 
 export default async function OnPluginLoad() {
   onPopupCreate((popup, type) => {
@@ -14,12 +16,16 @@ export default async function OnPluginLoad() {
         if (type === PopupType.Desktop) return Steam.MainWindowBrowserManager?.m_lastLocation;
         if (type === PopupType.Gamepad) return popup.window?.opener?.location;
       },
-      ({ pathname }) => {
+      async ({ pathname }) => {
         if (pathname.startsWith("/library/app/")) {
           const appId = Number(pathname.split("/")[3]);
-          const app = Steam.AppStore.allApps //
-            .find((a) => a.appid === appId)!;
-          patchLibraryApp(popup.window!, app);
+          const installFolders = await Steam.InstallFolder.GetInstallFolders();
+          for (const folder of installFolders)
+            for (const app of folder.vecApps)
+              if (app.nAppID === appId) {
+                patchLibraryApp(popup.window!, folder, app);
+                break;
+              }
         }
       },
     );

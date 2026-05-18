@@ -20,6 +20,9 @@ importers:
       react-dom:
         specifier: 19.1.1
         version: 19.1.1(react@19.1.1)
+      steambrew-utils:
+        specifier: 0.0.0-beta-20260514084206
+        version: 0.0.0-beta-20260514084206(@steambrew/client@5.8.4)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^0.5.0
@@ -1972,6 +1975,13 @@ packages:
 
   sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
+
+  steambrew-utils@0.0.0-beta-20260514084206:
+    resolution: {integrity: sha512-NNPivZL9TJhvs4e5I9D1PBNJzZsrPAeoLtrUAAIx5yNZGrQg4xRDafb7ApvLYw6rrmbzGP2wNLad8YRPogJUAg==}
+    peerDependencies:
+      '@steambrew/client': '>=5'
+      react: 19.1.1
+      react-dom: 19.1.1
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -4158,6 +4168,12 @@ snapshots:
       signal-exit: 4.1.0
 
   sprintf-js@1.0.3: {}
+
+  steambrew-utils@0.0.0-beta-20260514084206(@steambrew/client@5.8.4)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+    dependencies:
+      '@steambrew/client': 5.8.4
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
 
   string-width@4.2.3:
     dependencies:
