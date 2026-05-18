@@ -1,5 +1,6 @@
 {
   "name": "size-on-disk",
+  "version": "1.0.0",
   "scripts": {
     "format": "oxfmt",
     "lint": "oxlint",
