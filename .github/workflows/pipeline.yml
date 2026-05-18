@@ -114,6 +114,10 @@ jobs:
           publish: bash .github/scripts/release-publish.sh
           title: "Pending Releases"
           commit: "Update changelog and release"
+          # Our publish script creates the GitHub release (with the plugin zip
+          # attached); the action's own release-creation step would 409 on the
+          # tag we already published.
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PLUGIN_DB_TOKEN: ${{ secrets.PLUGIN_DB_TOKEN }}
