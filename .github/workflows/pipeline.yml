@@ -51,6 +51,7 @@ jobs:
           name: dist
           path: .millennium/
           retention-days: 1
+          include-hidden-files: true
 
   check:
     name: Type Checking
@@ -111,14 +112,17 @@ jobs:
         with:
           version: bash .github/scripts/release-version.sh
           publish: bash .github/scripts/release-publish.sh
-          title: "Pending Release"
-          commit: "chore: release plugin"
+          title: "Pending Releases"
+          commit: "Update changelog and release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PLUGIN_DB_TOKEN: ${{ secrets.PLUGIN_DB_TOKEN }}
           # Optional: only needed if this repo has been renamed since being
           # added to PluginDatabase as a submodule (URL-based lookup will miss).
           PLUGIN_DB_SUBMODULE_PATH: ${{ vars.PLUGIN_DB_SUBMODULE_PATH }}
+
+      - run: |
+          echo "published=${{ steps.changesets.outputs.published }}" >> $GITHUB_OUTPUT
 
   snapshot:
     name: Releasing Snapshot
