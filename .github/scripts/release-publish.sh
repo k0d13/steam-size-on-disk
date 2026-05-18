@@ -80,7 +80,8 @@ workdir=$(mktemp -d)
 gh repo clone "$fork" "$workdir" -- --depth=1
 pushd "$workdir" >/dev/null
 
-git remote add upstream "https://github.com/${upstream}.git"
+git remote add upstream "https://github.com/${upstream}.git" 2>/dev/null \
+  || git remote set-url upstream "https://github.com/${upstream}.git"
 git fetch upstream main --depth=1
 git checkout -B "$branch" upstream/main
 
