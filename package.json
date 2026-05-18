@@ -1,5 +1,5 @@
 {
-  "name": "steam-size-on-disk",
+  "name": "size-on-disk",
   "scripts": {
     "format": "oxfmt",
     "lint": "oxlint",

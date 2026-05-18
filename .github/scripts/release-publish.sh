@@ -46,11 +46,13 @@ if ! gh release view "$tag" >/dev/null 2>&1; then
   # Extract just this version's section from CHANGELOG.md (between `## X.Y.Z`
   # and the next `## ` header) so release notes aren't the entire history.
   notes_file=$(mktemp)
-  awk -v ver="$version" '
-    $0 == "## " ver { capture = 1; next }
-    capture && /^## / { exit }
-    capture { print }
-  ' CHANGELOG.md > "$notes_file"
+  if [ -f CHANGELOG.md ]; then
+    awk -v ver="$version" '
+      $0 == "## " ver { capture = 1; next }
+      capture && /^## / { exit }
+      capture { print }
+    ' CHANGELOG.md > "$notes_file"
+  fi
   gh release create "$tag" "$zip_name" --title "$tag" --notes-file "$notes_file"
 fi
 
