@@ -64,14 +64,16 @@ release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${tag}"
 
 export GH_TOKEN="$PLUGIN_DB_TOKEN"
 
-# Idempotently fork upstream under <pat-owner>/SteamClientHomeBrew_PluginDatabase
-# (no-op if the fork with that name already exists).
 fork_owner=$(gh api user --jq .login)
 fork="${fork_owner}/SteamClientHomeBrew_PluginDatabase"
-gh repo fork "$upstream" \
-  --clone=false \
-  --default-branch-only \
-  --fork-name SteamClientHomeBrew_PluginDatabase >/dev/null
+# Only fork if it doesn't already exist — fine-grained PATs can't fork repos
+# they don't own, so skip if the fork is already in place.
+if ! gh repo view "$fork" >/dev/null 2>&1; then
+  gh repo fork "$upstream" \
+    --clone=false \
+    --default-branch-only \
+    --fork-name SteamClientHomeBrew_PluginDatabase >/dev/null
+fi
 
 # Build/update the branch on the fork.
 workdir=$(mktemp -d)
