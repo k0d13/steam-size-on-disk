@@ -35,8 +35,8 @@ fi
 
 # Check the remote, not just local — Actions checkouts are shallow and don't
 # include tags by default, so a re-run after a previous push wouldn't see it.
+git tag -f "$tag"
 if ! git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
-  git tag "$tag"
   git push origin "$tag"
 fi
 
