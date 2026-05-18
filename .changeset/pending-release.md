@@ -1,5 +1,5 @@
 ---
-"steam-size-on-disk": patch
+"size-on-disk": patch
 ---
 
 Pending release
