@@ -24,12 +24,12 @@ const getNavigator = findModuleExport((e) =>
 
 interface SizeOnDiskProps {
   appId: number;
-  driveName: string;
-  folderLabel: string;
-  folderPath: string;
-  dlcSize: number;
-  workshopSize: number;
-  shaderSize: number;
+  driveName?: string;
+  folderLabel?: string;
+  folderPath?: string;
+  dlcSize?: number;
+  workshopSize?: number;
+  shaderSize?: number;
   totalSize: number;
 }
 
@@ -37,9 +37,9 @@ export function SizeOnDisk({
   appId,
   driveName,
   folderLabel,
-  dlcSize,
-  workshopSize,
-  shaderSize,
+  dlcSize = 0,
+  workshopSize = 0,
+  shaderSize = 0,
   totalSize,
 }: SizeOnDiskProps) {
   // The only "Size on Disk" translation is for sorting, so while it makes sense still in English,
@@ -50,17 +50,24 @@ export function SizeOnDisk({
 
   const navigator = getNavigator();
   const appSize = totalSize - dlcSize - workshopSize - shaderSize;
+  // Non-Steam games have no InstallFolder entry, so no drive/folder to
+  // report and no DLC/workshop/shader breakdown — just the one number.
+  const hasFolderInfo = driveName !== undefined && folderLabel !== undefined;
 
   const toolTipContent = (
     <>
-      {t(
-        "#AppProperties_LocalFilesSizeOnDrive",
-        formatBytes(totalSize, 2),
-        `${folderLabel} (${driveName})`,
+      {hasFolderInfo && (
+        <>
+          {t(
+            "#AppProperties_LocalFilesSizeOnDrive",
+            formatBytes(totalSize, 2),
+            `${folderLabel} (${driveName})`,
+          )}
+          <br />
+        </>
       )}
-      <br />
       <span style={{ textTransform: "capitalize" }}>{t("#AppType_Singular_2")}</span>:{" "}
-      {formatBytes(appSize, 2)}
+      {formatBytes(hasFolderInfo ? appSize : totalSize, 2)}
       {dlcSize > 0 && (
         <>
           <br />
