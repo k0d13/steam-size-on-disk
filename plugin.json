@@ -1,8 +1,8 @@
 {
-  "$schema": "https://raw.githubusercontent.com/shdwmtr/millennium/main/src/sys/plugin-schema.json",
+  "$schema": "https://raw.githubusercontent.com/SteamClientHomebrew/Millennium/main/src/sys/plugin-schema.json",
   "name": "size-on-disk",
   "common_name": "Size on Disk",
   "description": "Instantly see the size of a game on disk.",
   "version": "1.1.0",
-  "useBackend": false
+  "backendType": "lua"
 }
