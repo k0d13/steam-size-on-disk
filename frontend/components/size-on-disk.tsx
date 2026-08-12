@@ -24,8 +24,10 @@ const getNavigator = findModuleExport((e) =>
 
 interface SizeOnDiskProps {
   appId: number;
-  driveName: string;
-  folderLabel: string;
+  /** Only known for Steam apps, which live in a labelled install folder. */
+  driveName?: string;
+  /** Only known for Steam apps, which live in a labelled install folder. */
+  folderLabel?: string;
   folderPath: string;
   dlcSize: number;
   workshopSize: number;
@@ -37,6 +39,7 @@ export function SizeOnDisk({
   appId,
   driveName,
   folderLabel,
+  folderPath,
   dlcSize,
   workshopSize,
   shaderSize,
@@ -46,7 +49,7 @@ export function SizeOnDisk({
   // it's not ideal for other languages, so we just use the app size instead in those cases
   const sizeOnDiskLabel = t("#Library_SortBySizeOnDisk");
   const sizeLabel = t("#ContentManagement_AppSize");
-  const label = sizeOnDiskLabel === "Size on Disk" ? sizeOnDiskLabel : sizeLabel;
+  const label = sizeOnDiskLabel.props.children === "Size on Disk" ? sizeOnDiskLabel : sizeLabel;
 
   const navigator = getNavigator();
   const appSize = totalSize - dlcSize - workshopSize - shaderSize;
@@ -56,7 +59,9 @@ export function SizeOnDisk({
       {t(
         "#AppProperties_LocalFilesSizeOnDrive",
         formatBytes(totalSize, 2),
-        `${folderLabel} (${driveName})`,
+        // Non-Steam apps have no install folder to name, so their own folder
+        // path is all there is to point at
+        folderLabel && driveName ? `${folderLabel} (${driveName})` : folderPath,
       )}
       <br />
       <span style={{ textTransform: "capitalize" }}>{t("#AppType_Singular_2")}</span>:{" "}
@@ -96,7 +101,7 @@ export function SizeOnDisk({
         <div className={PlayBar.GameStatRight}>
           <div className={PlayBar.PlayBarLabel}>{label}</div>
           <div className={`${PlayBar.PlayBarDetailLabel} ${PlayBar.LastPlayedInfo}`}>
-            {formatBytes(Number(totalSize), 2)}
+            {formatBytes(totalSize, 2)}
           </div>
         </div>
       </div>
