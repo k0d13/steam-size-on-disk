@@ -35,7 +35,7 @@ export async function register() {
       this.length === 0 ||
       this.length > 20 ||
       !isAppPropertiesPage(this[0]) ||
-      typeof this[0].link !== 'string' ||
+      typeof this[0].link !== "string" ||
       !this.every(isAppPropertiesPage) ||
       this.some((p) => p.route === "/app/:appid/properties/localfiles")
     )
