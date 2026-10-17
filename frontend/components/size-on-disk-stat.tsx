@@ -1,12 +1,10 @@
 import {
-  findClassModule,
   findModuleDetailsByExport,
   findModuleExport,
   IconsModule,
+  playSectionClasses,
 } from "millennium";
 import type { AppSize } from "../app-sizes";
-
-const StatsBarClasses = findClassModule((m) => m.GameStat) as Record<string, string>;
 
 // Older Steam builds inline the "Tera" prefix, newer ones move it into a helper
 export const formatBytes: (bytes: number, decimals: number) => string =
@@ -78,17 +76,17 @@ export function SizeOnDiskStat({ size }: { size: AppSize }) {
     <Tooltip toolTipContent={toolTipContent}>
       <div
         onClick={() => navigator?.AppProperties(appId, "localfiles")}
-        className={`${StatsBarClasses.GameStat} ${StatsBarClasses.LastPlayed} Panel`}
+        className={`${playSectionClasses.GameStat} ${playSectionClasses.LastPlayed} Panel`}
         style={{ cursor: "pointer" }}
       >
-        <div className={`${StatsBarClasses.GameStatIcon} ${StatsBarClasses.PlaytimeIcon}`}>
+        <div className={`${playSectionClasses.GameStatIcon} ${playSectionClasses.PlaytimeIcon}`}>
           {/* Borrows the cloud icon's colour, since the drive icon is filled with currentColor */}
-          <IconsModule.HardDrive className={StatsBarClasses.CloudIconSVG} />
+          <IconsModule.HardDrive className={playSectionClasses.CloudIconSVG} />
         </div>
-        <div className={StatsBarClasses.GameStatRight}>
-          <div className={StatsBarClasses.PlayBarLabel}>{label}</div>
+        <div className={playSectionClasses.GameStatRight}>
+          <div className={playSectionClasses.PlayBarLabel}>{label}</div>
           <div
-            className={`${StatsBarClasses.PlayBarDetailLabel} ${StatsBarClasses.LastPlayedInfo}`}
+            className={`${playSectionClasses.PlayBarDetailLabel} ${playSectionClasses.LastPlayedInfo}`}
           >
             {total}
           </div>
