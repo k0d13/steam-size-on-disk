@@ -1,3 +1,4 @@
+import { Router } from "millennium";
 import { getAppFolder, isNonSteamApp, resolveAppFolder } from "./app-folders";
 import { getCachedFolderSize, resolveFolderSize } from "./folder-sizes";
 
@@ -77,10 +78,20 @@ export function getKnownAppSize(appId: number) {
   return isNonSteamApp(appId) ? getNonSteamAppSize(appId) : steamAppSizes.get(appId);
 }
 
+function isAppRunning(appId: number) {
+  // Millennium types appid as a string, though Steam's overviews hold a number
+  return Router.RunningApps?.some((app) => Number(app.appid) === appId) ?? false;
+}
+
 /** Bring an app's size up to date, measuring its folder again if it's changed. */
 export async function refreshAppSize(appId: number) {
   if (!isNonSteamApp(appId)) return refreshSteamAppSizes();
 
   const folderPath = await resolveAppFolder(appId);
-  if (folderPath) await resolveFolderSize(folderPath);
+  if (!folderPath) return;
+
+  // A running game keeps writing to its folder, so measuring it then would walk
+  // the whole folder on every visit for a size that's about to change anyway
+  if (isAppRunning(appId) && getCachedFolderSize(folderPath)) return;
+  await resolveFolderSize(folderPath);
 }

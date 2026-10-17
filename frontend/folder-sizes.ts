@@ -6,7 +6,12 @@ export interface FolderSize {
   fileCount: number;
   /** The folder's last write time when it was measured. */
   lastWriteTime: number;
+  /** When it was measured, in milliseconds. Missing from sizes cached before it was added. */
+  measuredAt?: number;
 }
+
+/** How long a measurement is trusted for, even if the folder has changed since. */
+const REMEASURE_AFTER_MS = 5 * 60 * 1000;
 
 // Versioned so a fix to how folders are measured throws away sizes measured by
 // the broken version, instead of serving them until each folder happens to change
@@ -34,6 +39,7 @@ export async function measureFolder(path: string) {
     totalSize: measured.total_size,
     fileCount: measured.file_count,
     lastWriteTime: measured.last_write_time,
+    measuredAt: Date.now(),
   };
   console.debug(`Measured '${path}'`, size);
   folderSizes.set(path, size);
@@ -42,7 +48,7 @@ export async function measureFolder(path: string) {
 
 /**
  * Get the size of a folder, measuring it again only when the folder's last
- * write time has changed since it was cached.
+ * write time has changed since it was cached, and not more than once every few minutes.
  *
  * Nested writes don't touch the folder's own write time, so a game that patched
  * itself in place keeps its cached size until it's measured again by hand.
@@ -59,5 +65,8 @@ export async function resolveFolderSize(path: string) {
   }
 
   if (lastWriteTime === cached.lastWriteTime) return cached;
+  // Walking a large folder blocks the backend, so a folder that keeps changing
+  // mustn't be walked again on every visit
+  if (Date.now() - (cached.measuredAt ?? 0) < REMEASURE_AFTER_MS) return cached;
   return measureFolder(path);
 }
