@@ -7,10 +7,6 @@ declare global {
   const appStore: {
     allApps: SteamAppOverview[];
   };
-
-  /** Only waited on to know Steam has started. A bare reference throws until it exists. */
-  // oxlint-disable-next-line no-var -- `var` is what puts it on `window`'s type.
-  var MainWindowBrowserManager: unknown;
 }
 
 export {};

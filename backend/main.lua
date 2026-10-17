@@ -27,5 +27,16 @@ return {
         },
       },
     },
+    -- Adds an Installed Files page to non-Steam apps' properties, after Shortcut
+    {
+      file = [[sp\.js]],
+      find = [[\w+\.push\(\{title:\(0,\w+\.\w+\)\("#AppProperties_ShortcutPage"\),route:[^,]+,link:\w+\.\w+\.AppProperties\.Shortcut\(\w+\),content:\(0,\w+\.jsx\)\(\w+,\{appId:\w+\.unAppID\}\)\}\)]],
+      transforms = {
+        {
+          match = [[((\w+)\.push\(\{title:\(0,\w+\.\w+\)\("#AppProperties_ShortcutPage"\),route:[^,]+,link:\w+\.\w+\.AppProperties\.Shortcut\((\w+)\),content:\(0,\w+\.jsx\)\(\w+,\{appId:\w+\.unAppID\}\)\}\))]],
+          replace = [[\1,#{{self}}?.appProperties?.addInstalledFilesPage?.(\2,\3)]],
+        },
+      },
+    },
   },
 }
