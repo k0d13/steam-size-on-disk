@@ -1,4 +1,4 @@
-import { Button, findClassModule, findModuleExport, TextField } from "@steambrew/client";
+import { Button, findClassModule, TextField } from "@steambrew/client";
 import { useCallback, useEffect, useState } from "react";
 import type { Steam } from "steambrew-utils";
 import { logger } from "..";
@@ -16,14 +16,12 @@ import {
   measureFolder,
   resolveFolderSize,
 } from "../app-sizes";
+import { formatBytes } from "./size-on-disk";
 
 /** How long "Calculating..." stays up for, so that it's readable at all. */
 const MEASURE_FEEDBACK_MS = 600;
 
 const SettingsStyles = findClassModule((m) => m.SectionTopLine)!;
-
-const formatBytes = //
-  findModuleExport((e) => e?.toString?.()?.includes('"Tera"'));
 
 export function FolderSelector({ app }: { app: Steam.AppOverview }) {
   const [path, setPath] = useState(() => getAppFolder(app.appid));
