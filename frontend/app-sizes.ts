@@ -1,94 +1,86 @@
-// Versioned so a fix to how folders are measured throws away sizes measured by
-// the broken version, instead of serving them until each folder happens to change
-const STORAGE_KEY = "size-on-disk:folder-sizes:v2";
+import { getAppFolder, isNonSteamApp, resolveAppFolder } from "./app-folders";
+import { getCachedFolderSize, resolveFolderSize } from "./folder-sizes";
 
-export interface FolderSize {
-  /** Sum of every file's size, in bytes. */
+export interface AppSize {
+  appId: number;
+  /** Everything the app takes up on disk, in bytes, DLC and the rest included. */
   totalSize: number;
-  /** Number of files counted. */
-  fileCount: number;
-  /** The folder's last write time when it was measured. */
-  lastWriteTime: number;
+  dlcSize: number;
+  workshopSize: number;
+  shaderSize: number;
+  folderPath: string;
+  // Only known for Steam apps, which live in a labelled install folder
+  driveName?: string;
+  folderLabel?: string;
 }
 
-type FolderSizes = Record<string, FolderSize>;
-
-function readAll(): FolderSizes {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return {};
-    return parsed as FolderSizes;
-  } catch (e) {
-    console.debug("Failed to read cached folder sizes", e);
-    return {};
-  }
+/** Only the fields we read. Millennium only types the string sizes, not these numbers. */
+interface InstallFolder {
+  strFolderPath: string;
+  strDriveName: string;
+  strUserLabel: string;
+  vecApps: {
+    nAppID: number;
+    nUsedSize: number;
+    nDLCSize: number;
+    nWorkshopSize: number;
+    nShaderSize: number;
+  }[];
 }
 
-function writeAll(sizes: FolderSizes) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sizes));
-  } catch (e) {
-    console.debug("Failed to cache folder sizes", e);
-  }
+interface InstallFolderClient {
+  InstallFolder: { GetInstallFolders(): Promise<InstallFolder[]> };
 }
 
-/** Get the cached size of a folder, however stale it may be. */
-export function getCachedFolderSize(path: string): FolderSize | undefined {
-  return readAll()[path];
+// Kept on hand rather than fetched when a page opens, so that the stat renders
+// with the stats bar's first frame, not a beat after
+const steamAppSizes = new Map<number, AppSize>();
+
+/** Steam knows the size of its own apps, and which install folder they're in. */
+export async function refreshSteamAppSizes() {
+  const client = SteamClient as unknown as InstallFolderClient;
+  const installFolders = await client.InstallFolder.GetInstallFolders();
+
+  steamAppSizes.clear();
+  for (const folder of installFolders)
+    for (const app of folder.vecApps)
+      steamAppSizes.set(app.nAppID, {
+        appId: app.nAppID,
+        totalSize: app.nUsedSize,
+        dlcSize: app.nDLCSize,
+        workshopSize: app.nWorkshopSize,
+        shaderSize: app.nShaderSize,
+        folderPath: folder.strFolderPath,
+        driveName: folder.strDriveName,
+        folderLabel: folder.strUserLabel,
+      });
 }
 
-function cacheFolderSize(path: string, size: FolderSize) {
-  const all = readAll();
-  all[path] = size;
-  writeAll(all);
-}
+/** Non-Steam apps have no size Steam knows, so their folder is measured and cached. */
+function getNonSteamAppSize(appId: number): AppSize | undefined {
+  const folderPath = getAppFolder(appId);
+  const cached = folderPath && getCachedFolderSize(folderPath);
+  if (!cached) return undefined;
 
-/** Forget the cached size of a folder. */
-export function forgetFolderSize(path: string) {
-  const all = readAll();
-  delete all[path];
-  writeAll(all);
-}
-
-/** Walk a folder and cache the result. Slow on large folders. */
-export async function measureFolder(path: string) {
-  const measured = await backend.measure_folder(path);
-  if (!measured) {
-    console.debug(`Failed to measure '${path}'`);
-    forgetFolderSize(path);
-    return undefined;
-  }
-
-  const size: FolderSize = {
-    totalSize: measured.total_size,
-    fileCount: measured.file_count,
-    lastWriteTime: measured.last_write_time,
+  return {
+    appId,
+    totalSize: cached.totalSize,
+    dlcSize: 0,
+    workshopSize: 0,
+    shaderSize: 0,
+    folderPath,
   };
-  console.debug(`Measured '${path}'`, size);
-  cacheFolderSize(path, size);
-  return size;
 }
 
-/**
- * Get the size of a folder, measuring it again only when the folder's last
- * write time has changed since it was cached.
- *
- * Nested writes don't touch the folder's own write time, so a game that patched
- * itself in place keeps its cached size until it's measured again by hand.
- */
-export async function resolveFolderSize(path: string) {
-  const cached = getCachedFolderSize(path);
-  if (!cached) return measureFolder(path);
+/** Whatever size is known for an app right now, without waiting on anything. */
+export function getKnownAppSize(appId: number) {
+  return isNonSteamApp(appId) ? getNonSteamAppSize(appId) : steamAppSizes.get(appId);
+}
 
-  const lastWriteTime = await backend.get_folder_stat(path);
-  if (lastWriteTime === null) {
-    // The folder is gone, so the cached size is meaningless now
-    forgetFolderSize(path);
-    return undefined;
-  }
+/** Bring an app's size up to date, measuring its folder again if it's changed. */
+export async function refreshAppSize(appId: number) {
+  if (!isNonSteamApp(appId)) return refreshSteamAppSizes();
 
-  if (lastWriteTime === cached.lastWriteTime) return cached;
-  return measureFolder(path);
+  const folderPath = await resolveAppFolder(appId);
+  if (folderPath) await resolveFolderSize(folderPath);
 }

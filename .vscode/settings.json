@@ -79,5 +79,5 @@
 
   // Code Spell Checker
   "cSpell.language": "en,en-GB",
-  "cSpell.words": ["millennium", "oxfmt", "oxlint", "renderers", "selene", "steambrew", "stylua"]
+  "cSpell.words": ["millennium", "oxfmt", "oxlint", "selene", "steambrew", "stylua"]
 }

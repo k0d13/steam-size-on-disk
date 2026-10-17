@@ -1,10 +1,10 @@
 import { definePlugin, IconsModule } from "millennium";
-import { refreshSteamAppSizes } from "./renderers/library-app";
+import { refreshSteamAppSizes } from "./app-sizes";
 
 /** @ffi */
-export { appProperties } from "./renderers/app-properties";
+export { appProperties } from "./patches/app-properties";
 /** @ffi */
-export { libraryApp } from "./renderers/library-app";
+export { statsBar } from "./patches/stats-bar";
 
 export default definePlugin(() => {
   // Fetched up front, so the first library page opened already has sizes to show

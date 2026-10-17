@@ -23,7 +23,7 @@ return {
       transforms = {
         {
           match = [[\(0,(\w+)\.jsx\)\((\w+),\{\.\.\.this\.props,onSeek:]],
-          replace = [[(0,\1.jsx)(#{{self}}?.libraryApp?.SizeOnDisk||(()=>null),{...this.props}),(0,\1.jsx)(\2,{...this.props,onSeek:]],
+          replace = [[(0,\1.jsx)(#{{self}}?.statsBar?.SizeOnDisk||(()=>null),{...this.props}),(0,\1.jsx)(\2,{...this.props,onSeek:]],
         },
       },
     },

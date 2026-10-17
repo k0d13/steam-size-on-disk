@@ -13,18 +13,32 @@ local DATA = millennium.steam_path() .. "/millennium/data/size-on-disk"
 
 local PATH = DATA .. "/plugin.log"
 
---- Started over past this, so a Steam that runs for weeks doesn't grow it forever.
-local MAX_BYTES = 1024 * 1024
+--- Only the latest lines are kept, so the log stays small however long Steam runs.
+local MAX_LINES = 500
 
 fs.create_directories(DATA)
-if (fs.file_size(PATH) or 0) > MAX_BYTES then
-  fs.remove(PATH)
+
+-- The log's lines are held in memory, so dropping the oldest doesn't mean reading it back
+local lines = {}
+for line in (utils.read_file(PATH) or ""):gmatch("[^\n]+") do
+  table.insert(lines, line)
+end
+while #lines > MAX_LINES do
+  table.remove(lines, 1)
 end
 
 ---@param level string
 ---@param message string
 local function write(level, message)
-  utils.append_file(PATH, os.date("%Y-%m-%d %H:%M:%S") .. " " .. level .. " " .. message .. "\n")
+  local line = os.date("%Y-%m-%d %H:%M:%S") .. " " .. level .. " " .. message
+  table.insert(lines, line)
+
+  if #lines > MAX_LINES then
+    table.remove(lines, 1)
+    utils.write_file(PATH, table.concat(lines, "\n") .. "\n")
+  else
+    utils.append_file(PATH, line .. "\n")
+  end
 end
 
 ---@param message string

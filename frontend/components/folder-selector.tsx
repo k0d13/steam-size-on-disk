@@ -1,4 +1,4 @@
-import { Button, findClassModule, type SteamAppOverview, TextField } from "millennium";
+import { Button, findClassModule, TextField } from "millennium";
 import { useCallback, useEffect, useState } from "react";
 import {
   clearAppFolder,
@@ -13,35 +13,35 @@ import {
   getCachedFolderSize,
   measureFolder,
   resolveFolderSize,
-} from "../app-sizes";
-import { formatBytes } from "./size-on-disk";
+} from "../folder-sizes";
+import { formatBytes } from "./size-on-disk-stat";
 
 /** How long "Calculating..." stays up for, so that it's readable at all. */
 const MEASURE_FEEDBACK_MS = 600;
 
 const SettingsStyles = findClassModule((m) => m.SectionTopLine)!;
 
-export function FolderSelector({ app }: { app: SteamAppOverview }) {
-  const [path, setPath] = useState(() => getAppFolder(app.appid));
+export function FolderSelector({ appId }: { appId: number }) {
+  const [path, setPath] = useState(() => getAppFolder(appId));
   const [size, setSize] = useState<FolderSize | undefined>(() =>
     path ? getCachedFolderSize(path) : undefined,
   );
   const [measuring, setMeasuring] = useState(false);
-  const [cleared, setCleared] = useState(() => isAppFolderCleared(app.appid));
+  const [cleared, setCleared] = useState(() => isAppFolderCleared(appId));
 
   // Nothing stored yet, so try to detect it from the app's shortcut
   useEffect(() => {
     if (path || cleared) return;
 
     let cancelled = false;
-    resolveAppFolder(app.appid).then((detected) => {
+    resolveAppFolder(appId).then((detected) => {
       if (!cancelled && detected) setPath(detected);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [app.appid, cleared, path]);
+  }, [appId, cleared, path]);
 
   // Measure whatever folder we ended up with, reusing the cached size unless
   // the folder has been written to since
@@ -79,25 +79,21 @@ export function FolderSelector({ app }: { app: SteamAppOverview }) {
     // Returns an OperationResponse instead of a path when nothing is selected
     if (typeof result !== "string" || result === "") return;
 
-    setAppFolder(app.appid, result);
+    setAppFolder(appId, result);
     setSize(getCachedFolderSize(result));
     setCleared(false);
     setPath(result);
-  }, [app.appid]);
+  }, [appId]);
 
-  // Clearing is remembered rather than forgotten, so that it reads as "don't
-  // show a size for this app" instead of being undone by detecting the
-  // shortcut's folder again on the next visit
   const clearFolder = useCallback(() => {
     if (path) forgetFolderSize(path);
-    clearAppFolder(app.appid);
+    clearAppFolder(appId);
     setSize(undefined);
     setCleared(true);
     setPath(undefined);
-  }, [app.appid, path]);
+  }, [appId, path]);
 
-  // A game that patched itself in place doesn't change its folder's own write
-  // time, so measuring again by hand is the only way to catch that
+  // The only way to catch a game that patched itself in place
   const recalculate = useCallback(async () => {
     if (!path) return;
 

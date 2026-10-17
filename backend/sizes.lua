@@ -4,18 +4,15 @@ local log = require("log")
 
 ---@class FolderMeasurement
 ---@field total_size integer Sum of every file's size, in bytes
----@field file_count integer Number of files counted
+---@field file_count integer
 ---@field last_write_time integer The folder's last write time when it was measured
 
 ---@ffi
 ---Get a folder's last write time, without walking it.
----
----Cheap, so the frontend calls this to decide whether its cached size is still
----good. Note that nested writes don't touch a folder's own write time, hence
----the "Recalculate" button on the frontend.
+---Cheap, so the frontend can tell whether its cached size is still good.
 ---@param path string
 ---@return integer|nil last_write_time
-function get_folder_stat(path)
+function GetFolderStat(path)
   if not fs.is_directory(path) then
     log.warn("Not a directory: " .. tostring(path))
     return nil
@@ -26,17 +23,12 @@ end
 
 ---@ffi
 ---Walk a folder and sum the size of every file in it.
----
----This recurses with fs.list instead of using fs.list_recursive, because
----Millennium's recursive listing never fills in the `size` or `is_symlink`
----fields its own types promise, leaving every file looking 0 bytes long.
----
----Symlinks are skipped so junctions don't get counted twice, and so a link
----pointing back up its own tree can't send this into a loop.
+---Recurses with fs.list, since fs.list_recursive leaves `size` and `is_symlink` unset.
+---Symlinks are skipped so nothing is counted twice or loops back up its own tree.
 ---@param path string
 ---@return FolderMeasurement|nil
-function measure_folder(path)
-  local last_write_time = get_folder_stat(path)
+function MeasureFolder(path)
+  local last_write_time = GetFolderStat(path)
   if not last_write_time then
     return nil
   end
@@ -55,7 +47,6 @@ function measure_folder(path)
       log.warn("Failed to list '" .. current .. "': " .. tostring(err))
     else
       for _, entry in ipairs(entries) do
-        -- Symlinks are skipped, see above
         if not entry.is_symlink then
           if entry.is_directory then
             table.insert(pending, entry.path)

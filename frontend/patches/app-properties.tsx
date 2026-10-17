@@ -9,16 +9,13 @@ interface AppPropertiesPage {
 
 /** Called by Steam while listing a non-Steam app's properties pages, through the backend's patch. */
 function addInstalledFilesPage(pages: AppPropertiesPage[], appId: number) {
-  const app = appStore.allApps.find((a) => a.appid === appId);
-  if (!app) return;
-
   pages.push({
     title: "Installed Files",
     route: "/app/:appid/properties/localfiles",
     link: `/app/${appId}/properties/localfiles`,
     content: (
       <div className="DialogBody">
-        <FolderSelector app={app} />
+        <FolderSelector appId={appId} />
       </div>
     ),
   });
