@@ -1,0 +1,27 @@
+name: Setup toolchain
+description: Setup the mise toolchain (Node.js, PNPM, Lua tools) and install dependencies
+
+runs:
+  using: "composite"
+  steps:
+    # Versions come from mise.toml, so CI and a dev machine run the same
+    # binaries — Node and PNPM as well as stylua, selene and lua-language-server.
+    - uses: jdx/mise-action@v3
+      with:
+        cache: true
+
+    - name: Get the PNPM store path
+      id: pnpm-store
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Cache PNPM store
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-${{ runner.os }}-
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      shell: bash

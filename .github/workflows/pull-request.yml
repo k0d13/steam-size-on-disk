@@ -1,0 +1,34 @@
+name: Pull Request
+
+# Everything that happens to a pull request: prove it. Releasing lives in
+# `release.yml`, and the gate both share lives in `quality.yml`.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "millennium.toml"
+      - "tsconfig.json"
+      - ".oxfmtrc.json"
+      - "frontend/**"
+      - "backend/**"
+      - ".changeset/**"
+      # Every workflow and release script, not only the ones this run uses: a
+      # pull request that touches one and matches nothing else would otherwise
+      # trigger no run at all, and required checks would sit pending forever.
+      - ".github/workflows/**"
+      - ".github/actions/**"
+      - ".github/scripts/**"
+      - "mise.toml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # A new push makes the old run irrelevant.
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    uses: ./.github/workflows/quality.yml

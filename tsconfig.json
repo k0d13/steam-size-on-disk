@@ -1,48 +1,25 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig.json",
-
-  "exclude": ["node_modules", ".millennium"],
-  "include": ["frontend"],
-
-  "compileOnSave": true,
+  "include": ["frontend", ".millennium/types"],
   "compilerOptions": {
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "exactOptionalPropertyTypes": false,
-    "noFallthroughCasesInSwitch": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "strict": true,
-
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "jsx": "react-jsx",
-
-    "declaration": false,
-    "declarationMap": false,
-    "importHelpers": false,
-    "newLine": "lf",
-    "noEmitHelpers": true,
-    "removeComments": false,
-
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-
-    "experimentalDecorators": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "target": "ES2022",
-    "useDefineForClassFields": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
-
-    "diagnostics": true,
-    "rootDir": "frontend",
-    "outDir": ".millennium/Dist"
+    "noEmit": true,
+    "paths": {
+      "millennium": ["./.millennium/lsp/ts"]
+    },
+    "typeRoots": ["./.millennium/types", "./node_modules/@types"]
   }
 }

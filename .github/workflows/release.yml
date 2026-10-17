@@ -1,0 +1,102 @@
+name: Release
+
+# Everything that happens once a change is on main. Pull requests live in
+# `pull-request.yml`, and the gate both share lives in `quality.yml`. A manual
+# dispatch runs that gate and stops there — releasing is driven by what lands on
+# main, never by hand.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "millennium.toml"
+      - "tsconfig.json"
+      - ".oxfmtrc.json"
+      - "frontend/**"
+      - "backend/**"
+      - ".changeset/**"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/quality.yml"
+      - ".github/actions/**"
+      - ".github/scripts/**"
+      - "mise.toml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never cancel on main — it could interrupt a release part way through.
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: Quality
+    uses: ./.github/workflows/quality.yml
+
+  process:
+    name: Processing Changesets
+    needs: [quality]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup toolchain
+        uses: ./.github/actions/toolchain
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: .millennium/
+
+      - name: Process changesets
+        id: changesets
+        uses: changesets/action@v2
+        with:
+          version-script: bash .github/scripts/release-version.sh
+          publish-script: bash .github/scripts/release-publish.sh
+          pr-title: "Pending Releases"
+          commit-message: "Update changelog and release"
+          # Our publish script creates the GitHub release (with the plugin .star
+          # attached); the action's own release-creation step would 409 on the
+          # tag we already published.
+          create-github-releases: false
+          # Same reason: the script pushes the tag itself, before the action gets
+          # a chance to.
+          push-git-tags: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLUGIN_DB_TOKEN: ${{ secrets.PLUGIN_DB_TOKEN }}
+          # Optional: only needed if this repo has been renamed since being
+          # added to PluginDatabase as a submodule (URL-based lookup will miss).
+          PLUGIN_DB_SUBMODULE_PATH: ${{ vars.PLUGIN_DB_SUBMODULE_PATH }}
+
+  snapshot:
+    name: Releasing Snapshot
+    needs: [process]
+    runs-on: ubuntu-latest
+    # Betas exist to preview changes waiting on a release, so this fires when the
+    # push had changesets left pending rather than a version PR to publish.
+    if: ${{ needs.process.outputs.published == 'false' }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup toolchain
+        uses: ./.github/actions/toolchain
+
+      - name: Publish snapshot release
+        run: bash .github/scripts/release-snapshot.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

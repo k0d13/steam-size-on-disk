@@ -1,63 +1,38 @@
-import type { AppDetails } from "@steambrew/client";
-import { logger } from ".";
+import type { AppDetails } from "millennium";
+import { createStore } from "./storage";
 
-const STORAGE_KEY = "size-on-disk:app-folders";
+/** Steam hands out appids from here up to non-Steam shortcuts. */
+const FIRST_NON_STEAM_APPID = 2147483648;
 
 /** How long to wait for app details to be populated before giving up. */
-const DETAILS_TIMEOUT = 5000;
+const DETAILS_TIMEOUT_MS = 5000;
 
 /**
- * A stored folder path, or `null` for an app whose folder has been cleared.
- *
- * Clearing has to be remembered, rather than just dropping the entry, so that
- * "I don't want a size for this game" isn't undone by detecting its folder from
- * its shortcut all over again on the next visit.
+ * A folder path per app, or `null` for an app whose folder has been cleared.
+ * Clearing is remembered so it isn't undone by detecting the folder again.
  */
-type AppFolders = Record<string, string | null>;
+const appFolders = createStore<string | null>("size-on-disk:app-folders");
 
-function readAll(): AppFolders {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return {};
-    return parsed as AppFolders;
-  } catch (e) {
-    logger.debug("Failed to read stored app folders", e);
-    return {};
-  }
+export function isNonSteamApp(appId: number) {
+  return appId >= FIRST_NON_STEAM_APPID;
 }
 
-function writeAll(folders: AppFolders) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(folders));
-  } catch (e) {
-    logger.debug("Failed to store app folder", e);
-  }
-}
-
-/** Get the stored folder path for an app, if it has one. */
-export function getAppFolder(appId: number): string | undefined {
-  return readAll()[String(appId)] ?? undefined;
+export function getAppFolder(appId: number) {
+  return appFolders.get(appId) ?? undefined;
 }
 
 /** Whether an app's folder was cleared, opting it out of having a size. */
 export function isAppFolderCleared(appId: number) {
-  return readAll()[String(appId)] === null;
+  return appFolders.get(appId) === null;
 }
 
-/** Store the folder path for an app. */
 export function setAppFolder(appId: number, path: string) {
-  const all = readAll();
-  all[String(appId)] = path;
-  writeAll(all);
+  appFolders.set(appId, path);
 }
 
 /** Clear an app's folder, opting it out of having a size until one is picked. */
 export function clearAppFolder(appId: number) {
-  const all = readAll();
-  all[String(appId)] = null;
-  writeAll(all);
+  appFolders.set(appId, null);
 }
 
 /**
@@ -72,7 +47,7 @@ function getShortcutDetails(appId: number) {
     const timeout = setTimeout(() => {
       registration?.unregister();
       resolve(undefined);
-    }, DETAILS_TIMEOUT);
+    }, DETAILS_TIMEOUT_MS);
 
     registration = SteamClient.Apps.RegisterForAppDetails(appId, (details) => {
       if (!details?.strShortcutExe) return;
@@ -101,7 +76,7 @@ function dirname(path: string) {
  * Detect the install folder of a non-Steam app from its shortcut, preferring
  * the shortcut's start directory and falling back to the executable's parent.
  */
-export async function detectAppFolder(appId: number) {
+async function detectAppFolder(appId: number) {
   const details = await getShortcutDetails(appId);
   if (!details) return undefined;
 
@@ -112,23 +87,18 @@ export async function detectAppFolder(appId: number) {
   return exe ? dirname(exe) : undefined;
 }
 
-/**
- * Get the folder for an app, detecting and storing it from the app's shortcut
- * when nothing has been stored yet. Stored paths always win, so a folder picked
- * by hand is never overwritten, and a cleared one is never filled back in.
- */
+/** Detects and stores the folder from the app's shortcut when none is stored. */
 export async function resolveAppFolder(appId: number) {
-  const stored = getAppFolder(appId);
-  if (stored) return stored;
-  if (isAppFolderCleared(appId)) return undefined;
+  const stored = appFolders.get(appId);
+  if (stored !== undefined) return stored ?? undefined;
 
   const detected = await detectAppFolder(appId);
   if (!detected) {
-    logger.debug(`Could not detect folder for app ${appId}`);
+    console.debug(`Could not detect folder for app ${appId}`);
     return undefined;
   }
 
-  logger.debug(`Detected folder for app ${appId}`, { detected });
+  console.debug(`Detected folder for app ${appId}`, { detected });
   setAppFolder(appId, detected);
   return detected;
 }

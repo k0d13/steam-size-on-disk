@@ -1,0 +1,43 @@
+[tools]
+node = "22.23.2"
+pnpm = "10.32.1"
+stylua = "2.5.2"
+"aqua:Kampfkarren/selene" = "0.31.0"
+"lua-language-server" = "3.19.1"
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+[tasks."check:types"]
+description = "Type check the frontend and backend"
+run = [
+  "tsc -p .",
+  "lua-language-server --check backend --checklevel Warning --configpath .luarc.json --logpath .ignore/luals",
+]
+[tasks."check:lint"]
+description = "Lint the frontend with oxlint and the backend with selene"
+run = ["oxlint", "selene backend"]
+[tasks."check:format"]
+description = "Report formatting everywhere without writing"
+run = ["oxfmt --check", "stylua --check backend"]
+[tasks.check]
+description = "Run every check"
+depends = ["check:types", "check:lint", "check:format"]
+
+[tasks."fix:lint"]
+description = "Apply oxlint fixes to the frontend"
+run = "oxlint --fix"
+[tasks."fix:format"]
+description = "Format the frontend with oxfmt and the backend with stylua"
+run = ["oxfmt", "stylua backend"]
+[tasks.fix]
+description = "Fix lint issues, then format everything"
+run = [{ task = "fix:lint" }, { task = "fix:format" }]
+
+[tasks.build]
+description = "Build the plugin for release into .millennium/"
+run = "starlight pack --release -o .millennium"
+
+[tasks.dev]
+description = "Rebuild into Steam on every change"
+run = "starlight watch"
