@@ -8,9 +8,13 @@ import {
 const PlayBar = findClassModule((m) => m.GameStat) as Record<string, string>;
 export const PlayBarClasses = PlayBar;
 
-const formatBytes = //
-  findModuleExport((e) => e?.toString?.()?.includes('"Tera"'));
-const t = findModuleExport((e) => e?.toString?.()?.match(/\.LocalizeString\([a-z]\)/g));
+// Older Steam builds inline the "Tera" prefix, newer ones move it into a helper
+export const formatBytes =
+  findModuleExport((e) => {
+    const s = e?.toString?.();
+    return s?.includes('"bytes"') && s.includes('"_PerSecond"');
+  }) ?? findModuleExport((e) => e?.toString?.()?.includes('"Tera"'));
+const t = findModuleExport((e) => e?.toString?.()?.match(/\.LocalizeString\([a-zA-Z_$][\w$]*\)/));
 const Tooltip = findModuleDetailsByExport(
   (m) =>
     m?.toString?.()?.includes(`divProps`) &&
