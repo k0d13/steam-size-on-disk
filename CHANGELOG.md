@@ -1,5 +1,12 @@
 # size-on-disk
 
+## 1.2.1
+
+### Patch Changes
+
+- 48011c2: Show the size on disk as soon as a library page opens, always in the same spot in the stats bar
+- 1dca659: Fix sizes not showing on the latest Steam client
+
 ## 1.2.0
 
 ### Minor Changes
