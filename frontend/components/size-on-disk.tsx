@@ -3,7 +3,7 @@ import {
   findModuleDetailsByExport,
   findModuleExport,
   IconsModule,
-} from "@steambrew/client";
+} from "millennium";
 
 const PlayBar = findClassModule((m) => m.GameStat) as Record<string, string>;
 export const PlayBarClasses = PlayBar;

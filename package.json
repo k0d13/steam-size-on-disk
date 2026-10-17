@@ -2,28 +2,15 @@
   "name": "size-on-disk",
   "version": "1.2.1",
   "scripts": {
-    "format": "oxfmt",
-    "lint": "oxlint",
-    "check": "tsc --noEmit",
-    "build": "millennium-ttc --build prod",
-    "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1",
-    "changeset": "changeset"
-  },
-  "dependencies": {
-    "@steambrew/client": "^5.8.4",
-    "enhanced-ms": "^4.2.0",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "steambrew-utils": "0.0.0-beta-20260514084206"
+    "prepare": "starlight lsp && oxfmt package.json .luarc.json tsconfig.json"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.5.0",
-    "@changesets/cli": "^2.27.0",
-    "@steambrew/ttc": "^2.8.7",
+    "@changesets/cli": "^3.0.1",
+    "@steambrew/starlight": "1.1.6",
     "@types/react": "19.1.1",
     "@types/react-dom": "19.1.1",
-    "oxfmt": "^0.28.0",
-    "oxlint": "^0.15.0",
+    "oxfmt": "^0.65.0",
+    "oxlint": "^1.80.0",
     "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@10.32.1"

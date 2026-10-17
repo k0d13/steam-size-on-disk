@@ -1,14 +1,3 @@
 {
-  "experimentalSortImports": {
-    "groups": [
-      ["side-effect"],
-      ["builtin"],
-      ["external", "external-type"],
-      ["internal", "internal-type"],
-      ["parent", "parent-type"],
-      ["sibling", "sibling-type"],
-      ["index", "index-type"]
-    ],
-    "newlinesBetween": false
-  }
+  "sortImports": { "newlinesBetween": false }
 }

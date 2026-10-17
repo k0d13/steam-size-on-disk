@@ -1,7 +1,5 @@
-import { Button, findClassModule, TextField } from "@steambrew/client";
+import { Button, findClassModule, type SteamAppOverview, TextField } from "millennium";
 import { useCallback, useEffect, useState } from "react";
-import type { Steam } from "steambrew-utils";
-import { logger } from "..";
 import {
   clearAppFolder,
   getAppFolder,
@@ -23,7 +21,7 @@ const MEASURE_FEEDBACK_MS = 600;
 
 const SettingsStyles = findClassModule((m) => m.SectionTopLine)!;
 
-export function FolderSelector({ app }: { app: Steam.AppOverview }) {
+export function FolderSelector({ app }: { app: SteamAppOverview }) {
   const [path, setPath] = useState(() => getAppFolder(app.appid));
   const [size, setSize] = useState<FolderSize | undefined>(() =>
     path ? getCachedFolderSize(path) : undefined,
@@ -74,7 +72,7 @@ export function FolderSelector({ app }: { app: Steam.AppOverview }) {
       });
     } catch (e) {
       // Rejects when the dialog is cancelled
-      logger.debug("Folder dialog cancelled", e);
+      console.debug("Folder dialog cancelled", e);
       return;
     }
 

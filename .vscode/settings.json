@@ -1,45 +1,83 @@
 {
+  // Editor
+  "editor.formatOnSave": true,
+  "editor.insertSpaces": true,
+  "editor.rulers": [100],
+  "editor.tabSize": 2,
+
+  // Explorer
   "explorer.compactFolders": true,
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {
-    "package.json": "pnpm-lock.yaml, pnpm-workspace.yaml",
+    "package.json": "pnpm-lock.yaml, pnpm-workspace.yaml, tsconfig.json, .oxfmtrc.json, .npmrc",
+    ".luarc.json": ".stylua.toml, selene.toml, lua54.toml",
     "*.js": "$(capture).js.map, $(capture).d.ts, $(capture).d.ts.map, $(capture).cjs",
     "*.cjs": "$(capture).cjs.map, $(capture).d.cts, $(capture).d.cts.map"
   },
 
-  "editor.insertSpaces": true,
-  "editor.tabSize": 2,
-
-  "[typescript]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "oxc.oxc-vscode",
-    "editor.codeActionsOnSave": {
-      "source.organizeImports.biome": "explicit"
-    }
+  // Files
+  "files.eol": "\n",
+  "files.watcherExclude": {
+    "**/.ignore": true,
+    "**/.millennium": true
+  },
+  "search.exclude": {
+    "**/.ignore": true,
+    "**/.millennium": true
   },
 
   // TypeScript
-  "typescript.preferences.importModuleSpecifierEnding": "js",
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.preferences.importModuleSpecifierEnding": "js",
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.codeActionsOnSave": { "source.fixAll.oxc": "explicit" }
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.codeActionsOnSave": { "source.fixAll.oxc": "explicit" }
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.codeActionsOnSave": { "source.fixAll.oxc": "explicit" }
+  },
+  "[json]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
 
-  // Code Spell Checker
-  "cSpell.language": "en-AU",
-  "cSpell.words": ["renderers"],
+  // Lua
+  "[lua]": {
+    "editor.defaultFormatter": "JohnnyMorganz.stylua"
+  },
+  "stylua.searchParentDirectories": true,
 
-  // Todo Tree
-  "todo-tree.general.tags": ["=====", "TODO"],
-  "todo-tree.highlights.customHighlight": {
+  // Better TODO Tree
+  "better-todo-tree.general.tags": ["=====", "TODO"],
+  "better-todo-tree.highlights.customHighlight": {
     "=====": {
       "type": "whole-line",
       "icon": "bookmark",
+      "background": "#00000000",
       "foreground": "#dadada",
+      "iconColour": "#dadada",
       "gutterIcon": true,
       "hideFromTree": true
     },
     "TODO": {
       "type": "whole-line",
       "icon": "check",
+      "background": "#00000000",
       "foreground": "#ff9900",
+      "iconColour": "#ff9900",
       "gutterIcon": true
     }
-  }
+  },
+
+  // Code Spell Checker
+  "cSpell.language": "en,en-GB",
+  "cSpell.words": ["millennium", "oxfmt", "oxlint", "renderers", "selene", "steambrew", "stylua"]
 }

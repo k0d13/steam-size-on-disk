@@ -1,5 +1,7 @@
-import type { AppDetails } from "@steambrew/client";
-import { logger } from ".";
+import type { AppDetails } from "millennium";
+
+/** Steam hands out appids above this to non-Steam shortcuts. */
+export const NON_STEAM_APP_APPID_MASK = 2147483648;
 
 const STORAGE_KEY = "size-on-disk:app-folders";
 
@@ -23,7 +25,7 @@ function readAll(): AppFolders {
     if (typeof parsed !== "object" || parsed === null) return {};
     return parsed as AppFolders;
   } catch (e) {
-    logger.debug("Failed to read stored app folders", e);
+    console.debug("Failed to read stored app folders", e);
     return {};
   }
 }
@@ -32,7 +34,7 @@ function writeAll(folders: AppFolders) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(folders));
   } catch (e) {
-    logger.debug("Failed to store app folder", e);
+    console.debug("Failed to store app folder", e);
   }
 }
 
@@ -124,11 +126,11 @@ export async function resolveAppFolder(appId: number) {
 
   const detected = await detectAppFolder(appId);
   if (!detected) {
-    logger.debug(`Could not detect folder for app ${appId}`);
+    console.debug(`Could not detect folder for app ${appId}`);
     return undefined;
   }
 
-  logger.debug(`Detected folder for app ${appId}`, { detected });
+  console.debug(`Detected folder for app ${appId}`, { detected });
   setAppFolder(appId, detected);
   return detected;
 }

@@ -1,6 +1,5 @@
-import { beforePatch } from "@steambrew/client";
-import { Steam, waitFor, NON_STEAM_APP_APPID_MASK } from "steambrew-utils";
-import { logger } from "..";
+import { beforePatch } from "millennium";
+import { NON_STEAM_APP_APPID_MASK } from "../app-folders";
 import { FolderSelector } from "../components/folder-selector";
 
 interface AppPropertiesPage {
@@ -28,7 +27,7 @@ export async function register() {
   // On Steam startup, Array#map is called ~15,000 times. By
   // waiting for the MainWindowBrowserManager to be ready before patching,
   // we reduce the number of calls to this patch to ~700.
-  await waitFor(() => Steam.MainWindowBrowserManager);
+  while (!window.MainWindowBrowserManager) await new Promise((r) => setTimeout(r, 10));
 
   const patch = beforePatch(Array.prototype, "map", function (this: AppPropertiesPage[]) {
     if (
@@ -43,7 +42,7 @@ export async function register() {
 
     const appId = Number(this[0].link.split("/")[2]);
     if (Number.isNaN(appId) || appId < NON_STEAM_APP_APPID_MASK) return;
-    const app = Steam.AppStore.allApps.find((a) => a.appid === appId);
+    const app = appStore.allApps.find((a) => a.appid === appId);
     if (!app) return;
 
     this.push({
@@ -58,7 +57,7 @@ export async function register() {
     });
   });
 
-  logger.debug("Registered app properties patch", { patch });
+  console.debug("Registered app properties patch", { patch });
 
   return patch.unpatch;
 }

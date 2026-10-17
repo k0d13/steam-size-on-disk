@@ -1,8 +1,6 @@
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
-import { NON_STEAM_APP_APPID_MASK, Steam } from "steambrew-utils";
-import { logger } from "..";
-import { getAppFolder, resolveAppFolder } from "../app-folders";
+import { getAppFolder, NON_STEAM_APP_APPID_MASK, resolveAppFolder } from "../app-folders";
 import { getCachedFolderSize, resolveFolderSize } from "../app-sizes";
 import { PlayBarClasses, SizeOnDisk } from "../components/size-on-disk";
 
@@ -23,13 +21,33 @@ interface AppSize {
 
 // ===== Sizes ===== //
 
+/** Only the fields we read. Millennium only types the string sizes, not these numbers. */
+interface InstallFolder {
+  strFolderPath: string;
+  strDriveName: string;
+  strUserLabel: string;
+  vecApps: {
+    nAppID: number;
+    strAppName: string;
+    nUsedSize: number;
+    nDLCSize: number;
+    nWorkshopSize: number;
+    nShaderSize: number;
+  }[];
+}
+
+interface Bridge {
+  InstallFolder: { GetInstallFolders(): Promise<InstallFolder[]> };
+}
+
 // Sizes are kept on hand rather than fetched when a page opens, so that the
 // stat can go in the moment Steam renders the stats bar, not a beat after
 const steamAppSizes = new Map<number, AppSize>();
 
 /** Steam knows the size of its own apps, and which install folder they're in. */
 export async function refreshSteamAppSizes() {
-  const installFolders = await Steam.InstallFolder.GetInstallFolders();
+  const bridge = SteamClient as unknown as Bridge;
+  const installFolders = await bridge.InstallFolder.GetInstallFolders();
 
   steamAppSizes.clear();
   for (const folder of installFolders)
@@ -58,7 +76,7 @@ function getNonSteamAppSize(appId: number): AppSize | undefined {
   const cached = getCachedFolderSize(folderPath);
   if (!cached) return undefined;
 
-  const app = Steam.AppStore.allApps.find((a) => a.appid === appId);
+  const app = appStore.allApps.find((a) => a.appid === appId);
   return {
     appId,
     appName: app?.display_name ?? String(appId),
@@ -121,7 +139,7 @@ function sync(document: Document, appId: number) {
     }
     container.setAttribute(ATTRIBUTE, key);
 
-    logger.debug(`Rendering size on disk for '${app.appName}'`, { app });
+    console.debug(`Rendering size on disk for '${app.appName}'`, { app });
 
     // Rendered synchronously, so the stat appears in the same frame as the
     // stats bar rather than as an empty box that fills in later
@@ -173,7 +191,7 @@ export function watch(window: Window, getPathname: () => string | undefined) {
       refreshedAppId = appId;
       refreshAppSize(appId)
         .then(() => getAppId() === appId && sync(window.document, appId))
-        .catch((e) => logger.debug(`Failed to refresh size of app ${appId}`, e));
+        .catch((e) => console.debug(`Failed to refresh size of app ${appId}`, e));
     }
   }
 

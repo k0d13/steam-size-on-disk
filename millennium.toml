@@ -1,0 +1,20 @@
+[plugin]
+id = "size-on-disk"
+name = "Size on Disk"
+version = "1.2.1"
+author = "k0d13"
+description = "Instantly see the size of a game on disk."
+
+[backend]
+entry = "backend/main.lua"
+sources = ["backend/**/*.lua"]
+
+[frontend]
+entry = "frontend/index.tsx"
+
+[compiler]
+output_path = "auto"
+
+[dev]
+auto_restart = true
+reload_steamui_when = "both"

@@ -3,8 +3,8 @@
 #
 # Fires when push-to-main has pending changesets that aren't yet merged via
 # the "Pending Release" PR. Generates a beta version from those changesets,
-# rebuilds, zips, and uploads to a GitHub pre-release so users can grab
-# preview zips. Does NOT push tags, commits, or open a DB PR.
+# rebuilds, and uploads the .star to a GitHub pre-release so users can grab
+# preview builds. Does NOT push tags, commits, or open a DB PR.
 #
 # Idempotent: snapshot versions include a timestamp + commit SHA so re-runs
 # produce a distinct release rather than colliding with the previous snapshot.
@@ -31,31 +31,24 @@ fi
 pnpm exec changeset version --snapshot beta
 
 snapshot_version=$(jq -r .version package.json)
-name=$(jq -r .name plugin.json)
+name=$(sed -n 's/^id = "\(.*\)"/\1/p' millennium.toml)
 
-# --- Mirror version into plugin.json ----------------------------------------
+# --- Mirror version into millennium.toml ------------------------------------
 
-# Done before the build so the snapshot version gets baked into anything that
-# reads plugin.json at build time.
-tmp=$(mktemp)
-jq --arg v "$snapshot_version" '.version = $v' plugin.json > "$tmp"
-mv "$tmp" plugin.json
+# Done before the build, since starlight bakes the version into the .star.
+sed -i "s/^version = \".*\"/version = \"${snapshot_version}\"/" millennium.toml
 
 # --- Build ------------------------------------------------------------------
 
-pnpm build
-
-# --- Zip --------------------------------------------------------------------
+mise run build
 
 tag="v${snapshot_version}"
-zip_name="${name}-${snapshot_version}.zip"
-zip_targets=(plugin.json .millennium)
-[ -d backend ] && zip_targets+=(backend)
-zip -r "$zip_name" "${zip_targets[@]}"
+asset="${name}-${snapshot_version}.star"
+cp ".millennium/${name}.star" "$asset"
 
 # --- GitHub pre-release -----------------------------------------------------
 
-gh release create "$tag" "$zip_name" \
+gh release create "$tag" "$asset" \
   --title "$tag" \
   --notes "Snapshot build from commit ${GITHUB_SHA}. Not a stable release." \
   --prerelease \

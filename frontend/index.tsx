@@ -1,27 +1,26 @@
-import { Steam } from "steambrew-utils";
-import { Logger } from "steambrew-utils/logger";
-import { onPopupCreate, PopupType } from "steambrew-utils/watchers";
+import { definePlugin, IconsModule } from "millennium";
+import { onPopupCreate, PopupType } from "./popups";
 import { register as registerAppProperties } from "./renderers/app-properties";
 import { refreshSteamAppSizes, watch as watchLibraryApp } from "./renderers/library-app";
 
-export const logger = new Logger("Steam Size On Disk");
-
-export default async function OnPluginLoad() {
+export default definePlugin(() => {
   registerAppProperties();
 
   // Fetched up front, so the first library page opened already has sizes to show
-  refreshSteamAppSizes().catch((e) => logger.debug("Failed to fetch Steam app sizes", e));
+  refreshSteamAppSizes().catch((e) => console.debug("Failed to fetch Steam app sizes", e));
 
-  onPopupCreate((popup, type, { onClose }) => {
+  onPopupCreate((popup, type) => {
     if (type !== PopupType.Desktop && type !== PopupType.Gamepad) return;
 
     // ===== Monitor Library App Pages ===== //
 
     const getLocation = () => {
-      if (type === PopupType.Desktop) return Steam.MainWindowBrowserManager?.m_lastLocation;
+      if (type === PopupType.Desktop) return window.MainWindowBrowserManager?.m_lastLocation;
       if (type === PopupType.Gamepad) return popup.window?.opener?.location;
     };
 
-    onClose(watchLibraryApp(popup.window!, () => getLocation()?.pathname));
+    return watchLibraryApp(popup.window!, () => getLocation()?.pathname);
   });
-}
+
+  return { title: "Size on Disk", icon: <IconsModule.HardDrive /> };
+});

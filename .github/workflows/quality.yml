@@ -1,0 +1,66 @@
+name: Quality
+
+# The shared gate: build the plugin, type check, lint. Nothing triggers this on
+# its own — it has no opinion about when it should run, only about what passing
+# means — so every caller decides that for itself and gets the same answer.
+on:
+  workflow_call:
+
+# Proving the plugin needs to read it and nothing more. Stated here rather than
+# left to the repository default, because these jobs run branch code and a token
+# that could push to main would be a token that could reach the release pipeline.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Building
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup toolchain
+        uses: ./.github/actions/toolchain
+
+      - name: Build plugin
+        run: mise run build
+
+      # The release jobs consume this rather than rebuilding, so what ships is
+      # the exact tree that passed the gate.
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: .millennium/*.star
+          retention-days: 1
+          include-hidden-files: true
+
+  check:
+    name: Type Checking
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup toolchain
+        uses: ./.github/actions/toolchain
+
+      - name: Type check the frontend and backend
+        run: mise run check:types
+
+  lint:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup toolchain
+        uses: ./.github/actions/toolchain
+
+      - name: Lint the frontend and backend
+        run: mise run check:lint
+
+      - name: Check formatting
+        run: mise run check:format
