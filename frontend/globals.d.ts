@@ -8,23 +8,9 @@ declare global {
     allApps: SteamAppOverview[];
   };
 
-  /** Steam draws each of its windows into a popup, announced through here. */
-  const g_PopupManager: {
-    GetExistingPopup(name: string): SteamPopup | undefined;
-    AddPopupCreatedCallback(callback: (popup: SteamPopup) => void): { Unregister(): void };
-    AddPopupDestroyedCallback(callback: (popup: SteamPopup) => void): { Unregister(): void };
-  };
-
-  interface SteamPopup {
-    window?: Window;
-  }
-
-  /**
-   * The desktop library's router. Big Picture has none, and it only exists once the
-   * main window has drawn, so read it off `window`: a bare reference throws until then.
-   */
+  /** Only waited on to know Steam has started. A bare reference throws until it exists. */
   // oxlint-disable-next-line no-var -- `var` is what puts it on `window`'s type.
-  var MainWindowBrowserManager: { m_lastLocation?: { pathname: string } } | undefined;
+  var MainWindowBrowserManager: unknown;
 }
 
 export {};

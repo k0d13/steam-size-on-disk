@@ -9,8 +9,6 @@ export interface FolderSize {
   fileCount: number;
   /** The folder's last write time when it was measured. */
   lastWriteTime: number;
-  /** Unix timestamp of when it was measured. */
-  measuredAt: number;
 }
 
 type FolderSizes = Record<string, FolderSize>;
@@ -47,9 +45,8 @@ function cacheFolderSize(path: string, size: FolderSize) {
   writeAll(all);
 }
 
-/** Forget the cached size of a folder, or of every folder. */
-export function forgetFolderSize(path?: string) {
-  if (path === undefined) return writeAll({});
+/** Forget the cached size of a folder. */
+export function forgetFolderSize(path: string) {
   const all = readAll();
   delete all[path];
   writeAll(all);
@@ -68,7 +65,6 @@ export async function measureFolder(path: string) {
     totalSize: measured.total_size,
     fileCount: measured.file_count,
     lastWriteTime: measured.last_write_time,
-    measuredAt: Math.floor(Date.now() / 1000),
   };
   console.debug(`Measured '${path}'`, size);
   cacheFolderSize(path, size);

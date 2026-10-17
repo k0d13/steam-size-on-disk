@@ -29,7 +29,7 @@ export async function register() {
   // we reduce the number of calls to this patch to ~700.
   while (!window.MainWindowBrowserManager) await new Promise((r) => setTimeout(r, 10));
 
-  const patch = beforePatch(Array.prototype, "map", function (this: AppPropertiesPage[]) {
+  beforePatch(Array.prototype, "map", function (this: AppPropertiesPage[]) {
     if (
       this.length === 0 ||
       this.length > 20 ||
@@ -56,8 +56,4 @@ export async function register() {
       ),
     });
   });
-
-  console.debug("Registered app properties patch", { patch });
-
-  return patch.unpatch;
 }

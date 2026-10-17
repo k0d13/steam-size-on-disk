@@ -6,7 +6,6 @@ import {
 } from "millennium";
 
 const PlayBar = findClassModule((m) => m.GameStat) as Record<string, string>;
-export const PlayBarClasses = PlayBar;
 
 // Older Steam builds inline the "Tera" prefix, newer ones move it into a helper
 export const formatBytes =
@@ -94,7 +93,6 @@ export function SizeOnDisk({
   return (
     <Tooltip toolTipContent={toolTipContent}>
       <div
-        data-size-on-disk
         onClick={() => navigator?.AppProperties(appId, "localfiles")}
         className={`${PlayBar.GameStat} ${PlayBar.LastPlayed} Panel`}
         style={{ cursor: "pointer" }}

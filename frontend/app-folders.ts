@@ -103,7 +103,7 @@ function dirname(path: string) {
  * Detect the install folder of a non-Steam app from its shortcut, preferring
  * the shortcut's start directory and falling back to the executable's parent.
  */
-export async function detectAppFolder(appId: number) {
+async function detectAppFolder(appId: number) {
   const details = await getShortcutDetails(appId);
   if (!details) return undefined;
 

@@ -1,12 +1,10 @@
-import { flushSync } from "react-dom";
-import { createRoot, type Root } from "react-dom/client";
+import { useEffect, useState } from "react";
 import { getAppFolder, NON_STEAM_APP_APPID_MASK, resolveAppFolder } from "../app-folders";
 import { getCachedFolderSize, resolveFolderSize } from "../app-sizes";
-import { PlayBarClasses, SizeOnDisk } from "../components/size-on-disk";
+import { SizeOnDisk } from "../components/size-on-disk";
 
 interface AppSize {
   appId: number;
-  appName: string;
   /** Total size of the app on disk, in bytes. */
   totalSize: number;
   folderPath: string;
@@ -19,8 +17,6 @@ interface AppSize {
   shaderSize?: number;
 }
 
-// ===== Sizes ===== //
-
 /** Only the fields we read. Millennium only types the string sizes, not these numbers. */
 interface InstallFolder {
   strFolderPath: string;
@@ -28,7 +24,6 @@ interface InstallFolder {
   strUserLabel: string;
   vecApps: {
     nAppID: number;
-    strAppName: string;
     nUsedSize: number;
     nDLCSize: number;
     nWorkshopSize: number;
@@ -41,7 +36,7 @@ interface Bridge {
 }
 
 // Sizes are kept on hand rather than fetched when a page opens, so that the
-// stat can go in the moment Steam renders the stats bar, not a beat after
+// stat renders with the stats bar's first frame, not a beat after
 const steamAppSizes = new Map<number, AppSize>();
 
 /** Steam knows the size of its own apps, and which install folder they're in. */
@@ -54,7 +49,6 @@ export async function refreshSteamAppSizes() {
     for (const app of folder.vecApps)
       steamAppSizes.set(app.nAppID, {
         appId: app.nAppID,
-        appName: app.strAppName,
         totalSize: app.nUsedSize,
         folderPath: folder.strFolderPath,
         driveName: folder.strDriveName,
@@ -65,24 +59,14 @@ export async function refreshSteamAppSizes() {
       });
 }
 
-/**
- * Non-Steam apps aren't in any install folder and have no size Steam knows
- * about, so their folder is detected from their shortcut (or set by hand) and
- * measured by the backend, then cached.
- */
+/** Non-Steam apps have no size Steam knows, so their folder is measured and cached. */
 function getNonSteamAppSize(appId: number): AppSize | undefined {
   const folderPath = getAppFolder(appId);
   if (!folderPath) return undefined;
   const cached = getCachedFolderSize(folderPath);
   if (!cached) return undefined;
 
-  const app = appStore.allApps.find((a) => a.appid === appId);
-  return {
-    appId,
-    appName: app?.display_name ?? String(appId),
-    folderPath,
-    totalSize: cached.totalSize,
-  };
+  return { appId, folderPath, totalSize: cached.totalSize };
 }
 
 /** Whatever size is known for an app right now, without waiting on anything. */
@@ -98,106 +82,44 @@ async function refreshAppSize(appId: number) {
   if (folderPath) await resolveFolderSize(folderPath);
 }
 
-// ===== Rendering ===== //
-
-const ATTRIBUTE = "data-size-on-disk-root";
-const roots = new Map<HTMLElement, Root>();
-
-/** Put the size stat into every stats bar in a document, or take it out if there's no size. */
-function sync(document: Document, appId: number) {
-  // Steam throws stats bars away when navigating, so drop the roots left in them
-  for (const [container, root] of roots)
-    if (!container.isConnected) {
-      root.unmount();
-      roots.delete(container);
-    }
-
-  const app = getKnownAppSize(appId);
-  const key = app?.totalSize ? `${app.appId}:${app.totalSize}` : undefined;
-
-  for (const parent of document.querySelectorAll(`.${PlayBarClasses.GameStatsSection}`)) {
-    let container = parent.querySelector<HTMLElement>(`:scope > [${ATTRIBUTE}]`);
-    // The stats bar can be reused between apps, so checking it's there isn't enough
-    if (container?.getAttribute(ATTRIBUTE) === (key ?? "")) continue;
-
-    if (!app || !key) {
-      if (container) {
-        roots.get(container)?.unmount();
-        roots.delete(container);
-        container.remove();
-      }
-      continue;
-    }
-
-    if (!container) {
-      container = document.createElement("div");
-      // Achievements are added whenever Steam gets round to it, so ordering
-      // with CSS keeps the stat in the same place whichever lands first
-      container.style.order = "1";
-      roots.set(container, createRoot(container));
-      parent.appendChild(container);
-    }
-    container.setAttribute(ATTRIBUTE, key);
-
-    console.debug(`Rendering size on disk for '${app.appName}'`, { app });
-
-    // Rendered synchronously, so the stat appears in the same frame as the
-    // stats bar rather than as an empty box that fills in later
-    const root = roots.get(container)!;
-    flushSync(() =>
-      root.render(
-        <SizeOnDisk
-          appId={app.appId}
-          driveName={app.driveName}
-          folderLabel={app.folderLabel}
-          folderPath={app.folderPath}
-          dlcSize={app.dlcSize ?? 0}
-          workshopSize={app.workshopSize ?? 0}
-          shaderSize={app.shaderSize ?? 0}
-          totalSize={app.totalSize}
-        />,
-      ),
-    );
-  }
+/** The props the stats bar passes each stat, of which only the app is read. */
+interface StatsBarProps {
+  overview?: { appid: number };
 }
 
-/**
- * Keep the size of an app, Steam or not, on its library page.
- *
- * Watches the document rather than waiting on location changes, which are only
- * polled every second, so the stat goes in as soon as Steam renders the page.
- */
-export function watch(window: Window, getPathname: () => string | undefined) {
-  let refreshedAppId: number | undefined;
+/** Rendered by Steam in the library stats bar, through the backend's patch. */
+function LibraryAppSizeOnDisk({ overview }: StatsBarProps) {
+  const appId = overview?.appid;
+  const [app, setApp] = useState(() => (appId === undefined ? undefined : getKnownAppSize(appId)));
 
-  function getAppId() {
-    const pathname = getPathname()?.replace("/routes", "");
-    if (!pathname?.startsWith("/library/app/")) return undefined;
-    const appId = Number(pathname.split("/")[3]);
-    return Number.isNaN(appId) ? undefined : appId;
-  }
+  // Paint what's known first, then catch up in case it's changed since
+  useEffect(() => {
+    if (appId === undefined) return setApp(undefined);
+    setApp(getKnownAppSize(appId));
 
-  function update() {
-    const appId = getAppId();
-    if (appId === undefined) {
-      refreshedAppId = undefined;
-      return;
-    }
+    let current = true;
+    refreshAppSize(appId)
+      .then(() => current && setApp(getKnownAppSize(appId)))
+      .catch((e) => console.debug(`Failed to refresh size of app ${appId}`, e));
+    return () => {
+      current = false;
+    };
+  }, [appId]);
 
-    sync(window.document, appId);
+  if (!app?.totalSize) return null;
 
-    // Paint what's known first, then catch up in case it's changed since
-    if (appId !== refreshedAppId) {
-      refreshedAppId = appId;
-      refreshAppSize(appId)
-        .then(() => getAppId() === appId && sync(window.document, appId))
-        .catch((e) => console.debug(`Failed to refresh size of app ${appId}`, e));
-    }
-  }
-
-  const observer = new MutationObserver(update);
-  observer.observe(window.document, { childList: true, subtree: true });
-  update();
-
-  return () => observer.disconnect();
+  return (
+    <SizeOnDisk
+      appId={app.appId}
+      driveName={app.driveName}
+      folderLabel={app.folderLabel}
+      folderPath={app.folderPath}
+      dlcSize={app.dlcSize ?? 0}
+      workshopSize={app.workshopSize ?? 0}
+      shaderSize={app.shaderSize ?? 0}
+      totalSize={app.totalSize}
+    />
+  );
 }
+
+export const libraryApp = { SizeOnDisk: LibraryAppSizeOnDisk };

@@ -9,14 +9,23 @@ require("sizes")
 
 local function on_load()
   millennium.ready()
-  log.info("Backend loaded, waiting for frontend...")
-end
-
-local function on_frontend_loaded()
-  log.info("Frontend has loaded, now ready to measure folders...")
+  log.info("Backend loaded")
 end
 
 return {
   on_load = on_load,
-  on_frontend_loaded = on_frontend_loaded,
+  patches = {
+    -- Adds the size to the library stats bar, before achievements (the stat passed
+    -- `onSeek`), which render late and would otherwise push it along
+    {
+      file = [[sp\.js]],
+      find = [=[className:\w+\(\)\.GameStatsSection,children:\[[^\]]*?\(0,\w+\.jsx\)\(\w+,\{\.\.\.this\.props,onSeek:]=],
+      transforms = {
+        {
+          match = [[\(0,(\w+)\.jsx\)\((\w+),\{\.\.\.this\.props,onSeek:]],
+          replace = [[(0,\1.jsx)(#{{self}}?.libraryApp?.SizeOnDisk||(()=>null),{...this.props}),(0,\1.jsx)(\2,{...this.props,onSeek:]],
+        },
+      },
+    },
+  },
 }
