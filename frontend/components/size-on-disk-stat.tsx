@@ -82,7 +82,8 @@ export function SizeOnDiskStat({ size }: { size: AppSize }) {
         style={{ cursor: "pointer" }}
       >
         <div className={`${StatsBarClasses.GameStatIcon} ${StatsBarClasses.PlaytimeIcon}`}>
-          <IconsModule.HardDrive />
+          {/* Borrows the cloud icon's colour, since the drive icon is filled with currentColor */}
+          <IconsModule.HardDrive className={StatsBarClasses.CloudIconSVG} />
         </div>
         <div className={StatsBarClasses.GameStatRight}>
           <div className={StatsBarClasses.PlayBarLabel}>{label}</div>
