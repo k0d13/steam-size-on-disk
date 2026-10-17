@@ -1,5 +1,18 @@
 # size-on-disk
 
+## 1.3.0
+
+### Minor Changes
+
+- 1dd5b51: Build with Starlight, so the plugin ships as a single `.star` file
+
+### Patch Changes
+
+- 7ad5ea1: Keep only the last 500 lines of the plugin's log
+- aae8b5f: Keep the drive icon readable on light stats bar backgrounds
+- 7ad5ea1: Show the size on disk with the rest of the stats bar instead of a moment after, ahead of achievements so it no longer moves when they load
+- 88db7a8: Stop Steam reloading over and over while a non-Steam game is running, by not measuring its folder while it runs or more than once every 5 minutes
+
 ## 1.2.1
 
 ### Patch Changes
