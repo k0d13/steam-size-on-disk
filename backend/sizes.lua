@@ -21,6 +21,32 @@ function GetFolderStat(path)
   return fs.last_write_time(path) or 0
 end
 
+local TWO_POW_32 = 4294967296
+
+---Get a file's size, past the 32-bit limit of fs.list and fs.file_size.
+---Steam is a 32-bit process, so Millennium's lua_pushinteger wraps any size over 2 GiB;
+---LuaJIT's file:seek uses 64-bit offsets and returns a double, so it doesn't.
+---@param entry fs.Entry
+---@return number size
+local function file_size(entry)
+  local file = io.open(entry.path, "rb")
+  if file then
+    local size = file:seek("end")
+    file:close()
+    if size then
+      return size
+    end
+  end
+
+  -- Opening can fail on a locked file, so fall back to fs.list's size,
+  -- which is right below 4 GiB once its sign is undone
+  local size = entry.size or 0
+  if size < 0 then
+    size = size + TWO_POW_32
+  end
+  return size
+end
+
 ---@ffi
 ---Walk a folder and sum the size of every file in it.
 ---Recurses with fs.list, since fs.list_recursive leaves `size` and `is_symlink` unset.
@@ -51,7 +77,7 @@ function MeasureFolder(path)
           if entry.is_directory then
             table.insert(pending, entry.path)
           elseif entry.is_file then
-            total_size = total_size + (entry.size or 0)
+            total_size = total_size + file_size(entry)
             file_count = file_count + 1
           end
         end
