@@ -26,10 +26,11 @@ local TWO_POW_32 = 4294967296
 ---Get a file's size, past the 32-bit limit of fs.list and fs.file_size.
 ---Steam is a 32-bit process, so Millennium's lua_pushinteger wraps any size over 2 GiB;
 ---LuaJIT's file:seek uses 64-bit offsets and returns a double, so it doesn't.
----@param entry fs.Entry
+---@param path string
+---@param listed_size integer|nil The size fs.list gave for the file
 ---@return number size
-local function file_size(entry)
-  local file = io.open(entry.path, "rb")
+local function file_size(path, listed_size)
+  local file = io.open(path, "rb")
   if file then
     local size = file:seek("end")
     file:close()
@@ -40,7 +41,7 @@ local function file_size(entry)
 
   -- Opening can fail on a locked file, so fall back to fs.list's size,
   -- which is right below 4 GiB once its sign is undone
-  local size = entry.size or 0
+  local size = listed_size or 0
   if size < 0 then
     size = size + TWO_POW_32
   end
@@ -77,7 +78,7 @@ function MeasureFolder(path)
           if entry.is_directory then
             table.insert(pending, entry.path)
           elseif entry.is_file then
-            total_size = total_size + file_size(entry)
+            total_size = total_size + file_size(entry.path, entry.size)
             file_count = file_count + 1
           end
         end
