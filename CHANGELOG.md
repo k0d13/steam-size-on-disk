@@ -1,5 +1,11 @@
 # size-on-disk
 
+## 1.3.2
+
+### Patch Changes
+
+- 7db05da: Hide the size of a non-Steam game marked not installed, such as an uninstalled Epic game, instead of measuring its launcher's folder
+
 ## 1.3.1
 
 ### Patch Changes
