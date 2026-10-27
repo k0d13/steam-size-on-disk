@@ -8,31 +8,52 @@ const FIRST_NON_STEAM_APPID = 2147483648;
 const DETAILS_TIMEOUT_MS = 5000;
 
 /**
- * A folder path per app, or `null` for an app whose folder has been cleared.
- * Clearing is remembered so it isn't undone by detecting the folder again.
+ * A folder path per app picked in its properties, or `null` for an app whose folder has
+ * been cleared. Clearing is remembered so it isn't undone by detecting the folder again.
  */
-const appFolders = createStore<string | null>("size-on-disk:app-folders");
+const pickedFolders = createStore<string | null>("size-on-disk:picked-folders");
+
+/**
+ * The folder last detected from each app's shortcut. Detected again on every refresh, as
+ * a launcher can move its shortcut's folder, say once the game it launches is installed,
+ * and kept only so the stat can be drawn before that finishes.
+ */
+const detectedFolders = createStore<string>("size-on-disk:detected-folders");
+
+/**
+ * Detected and picked folders alike, from before they were kept apart. Each app's entry is
+ * sorted into one or the other the next time its folder is resolved.
+ */
+const legacyFolders = createStore<string | null>("size-on-disk:app-folders");
 
 export function isNonSteamApp(appId: number) {
   return appId >= FIRST_NON_STEAM_APPID;
 }
 
+function getPickedFolder(appId: number) {
+  const picked = pickedFolders.get(appId);
+  return picked === undefined ? legacyFolders.get(appId) : picked;
+}
+
 export function getAppFolder(appId: number) {
-  return appFolders.get(appId) ?? undefined;
+  const picked = getPickedFolder(appId);
+  return picked === undefined ? detectedFolders.get(appId) : (picked ?? undefined);
 }
 
 /** Whether an app's folder was cleared, opting it out of having a size. */
 export function isAppFolderCleared(appId: number) {
-  return appFolders.get(appId) === null;
+  return getPickedFolder(appId) === null;
 }
 
 export function setAppFolder(appId: number, path: string) {
-  appFolders.set(appId, path);
+  pickedFolders.set(appId, path);
+  legacyFolders.delete(appId);
 }
 
 /** Clear an app's folder, opting it out of having a size until one is picked. */
 export function clearAppFolder(appId: number) {
-  appFolders.set(appId, null);
+  pickedFolders.set(appId, null);
+  legacyFolders.delete(appId);
 }
 
 /**
@@ -74,31 +95,52 @@ function dirname(path: string) {
 
 /**
  * Detect the install folder of a non-Steam app from its shortcut, preferring
- * the shortcut's start directory and falling back to the executable's parent.
+ * the shortcut's start directory and falling back to the executable's parent,
+ * which is also returned so a folder stored from it can be recognised.
  */
 async function detectAppFolder(appId: number) {
   const details = await getShortcutDetails(appId);
   if (!details) return undefined;
 
-  const startDir = cleanPath(details.strShortcutStartDir ?? "");
-  if (startDir) return startDir;
-
   const exe = cleanPath(details.strShortcutExe ?? "");
-  return exe ? dirname(exe) : undefined;
+  const exeFolder = exe ? dirname(exe) : undefined;
+  const startDir = cleanPath(details.strShortcutStartDir ?? "");
+  return { folder: startDir || exeFolder, exeFolder };
 }
 
-/** Detects and stores the folder from the app's shortcut when none is stored. */
-export async function resolveAppFolder(appId: number) {
-  const stored = appFolders.get(appId);
-  if (stored !== undefined) return stored ?? undefined;
+/**
+ * A folder stored before picked and detected ones were kept apart is taken as detected
+ * when detection would still find it, or would have from the executable, and as picked
+ * otherwise.
+ */
+function sortLegacyFolder(appId: number, detection: Awaited<ReturnType<typeof detectAppFolder>>) {
+  const legacy = legacyFolders.get(appId);
+  if (legacy === undefined) return;
 
-  const detected = await detectAppFolder(appId);
+  legacyFolders.delete(appId);
+  if (legacy !== null && (legacy === detection?.folder || legacy === detection?.exeFolder)) return;
+  pickedFolders.set(appId, legacy);
+}
+
+/** The app's picked folder, or else the one detected from its shortcut as it is now. */
+export async function resolveAppFolder(appId: number) {
+  if (pickedFolders.get(appId) !== undefined) return pickedFolders.get(appId) ?? undefined;
+
+  const detection = await detectAppFolder(appId);
+  sortLegacyFolder(appId, detection);
+  const picked = pickedFolders.get(appId);
+  if (picked !== undefined) return picked ?? undefined;
+
+  const detected = detection?.folder;
   if (!detected) {
     console.debug(`Could not detect folder for app ${appId}`);
+    detectedFolders.delete(appId);
     return undefined;
   }
 
-  console.debug(`Detected folder for app ${appId}`, { detected });
-  setAppFolder(appId, detected);
+  if (detectedFolders.get(appId) !== detected) {
+    console.debug(`Detected folder for app ${appId}`, { detected });
+    detectedFolders.set(appId, detected);
+  }
   return detected;
 }

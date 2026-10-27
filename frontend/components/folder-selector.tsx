@@ -29,19 +29,20 @@ export function FolderSelector({ appId }: { appId: number }) {
   const [measuring, setMeasuring] = useState(false);
   const [cleared, setCleared] = useState(() => isAppFolderCleared(appId));
 
-  // Nothing stored yet, so try to detect it from the app's shortcut
+  // Detected again from the app's shortcut, which may have moved, unless one was picked
   useEffect(() => {
-    if (path || cleared) return;
+    if (cleared) return;
 
     let cancelled = false;
-    resolveAppFolder(appId).then((detected) => {
-      if (!cancelled && detected) setPath(detected);
+    // Read back once done, in case a folder was picked meanwhile
+    resolveAppFolder(appId).then(() => {
+      if (!cancelled) setPath(getAppFolder(appId));
     });
 
     return () => {
       cancelled = true;
     };
-  }, [appId, cleared, path]);
+  }, [appId, cleared]);
 
   // Measure whatever folder we ended up with, reusing the cached size unless
   // the folder has been written to since
