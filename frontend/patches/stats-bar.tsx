@@ -4,12 +4,15 @@ import { SizeOnDiskStat } from "../components/size-on-disk-stat";
 
 /** The props the stats bar passes each stat, of which only the app is read. */
 interface StatProps {
-  overview?: { appid: number };
+  overview?: { appid: number; local_per_client_data?: { installed?: boolean } };
 }
 
 /** Rendered by Steam in the library stats bar, through the backend's patch. */
 function SizeOnDisk({ overview }: StatProps) {
-  const appId = overview?.appid;
+  // A non-Steam app marked not installed, as a launcher's plugin can, would otherwise be
+  // measured by its executable's folder, which is the launcher's
+  const installed = overview?.local_per_client_data?.installed !== false;
+  const appId = installed ? overview?.appid : undefined;
   const [size, setSize] = useState(() =>
     appId === undefined ? undefined : getKnownAppSize(appId),
   );
