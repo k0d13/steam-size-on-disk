@@ -5,6 +5,8 @@ import {
   playSectionClasses,
 } from "millennium";
 import type { AppSize } from "../app-sizes";
+import { openAppFolder } from "../open-app-folder";
+import { getSetting } from "../settings";
 
 // Older Steam builds inline the "Tera" prefix, newer ones move it into a helper
 export const formatBytes: (bytes: number, decimals: number) => string =
@@ -75,7 +77,11 @@ export function SizeOnDiskStat({ size }: { size: AppSize }) {
   return (
     <Tooltip toolTipContent={toolTipContent}>
       <div
-        onClick={() => navigator?.AppProperties(appId, "localfiles")}
+        onClick={async () => {
+          // Falls back to the properties when the folder can't be worked out
+          if (getSetting("openFolderOnClick", false) && (await openAppFolder(size))) return;
+          navigator?.AppProperties(appId, "localfiles");
+        }}
         className={`${playSectionClasses.GameStat} ${playSectionClasses.LastPlayed} Panel`}
         style={{ cursor: "pointer" }}
       >
