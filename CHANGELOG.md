@@ -1,5 +1,16 @@
 # size-on-disk
 
+## 1.4.0
+
+### Minor Changes
+
+- 2952222: Add a setting to open the game's folder when its size is clicked, instead of its Installed Files properties
+
+### Patch Changes
+
+- b36c80c: Detect a non-Steam game's folder again each time instead of keeping the first one found, so a shortcut that moves, such as an Epic game once installed, is measured where it is now, while keeping folders picked by hand
+- ca27839: Hide the size of a non-Steam game marked not installed, such as an uninstalled Epic game, instead of measuring its launcher's folder
+
 ## 1.3.1
 
 ### Patch Changes
